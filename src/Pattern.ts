@@ -19,8 +19,8 @@ export default class Pattern {
 		this.variables = variables;
 	}
 
-	validateDocument(documentDom, parentVariables) {
-		const variables = Variable.reduceVariables(documentDom, this.variables, {
+	validateDocument(documentDom, parentVariables, namespaceResolver: (prefix: string) => string) {
+		const variables = Variable.reduceVariables(documentDom, this.variables, namespaceResolver, {
 			...parentVariables
 		});
 		const ruleContexts = this.rules.map(rule =>
@@ -32,7 +32,11 @@ export default class Pattern {
 			const ruleIndex = ruleContexts.findIndex(context => context.includes(node));
 			const rule = ruleIndex >= 0 ? this.rules[ruleIndex] : null;
 			if (rule) {
-				results.splice(results.length, 0, ...rule.validateNode(node, variables));
+				results.splice(
+					results.length,
+					0,
+					...rule.validateNode(node, variables, namespaceResolver)
+				);
 			}
 
 			return node.childNodes.reduce(flattenValidationResults, results);

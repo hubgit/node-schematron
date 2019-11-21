@@ -43,28 +43,59 @@ export default class Schema {
 			phaseId = this.defaultPhase || '#ALL';
 		}
 
-		const variables = Variable.reduceVariables(documentDom, this.variables, {});
+		const namespaceResolver = this.getNamespaceUriForPrefix.bind(this);
+		const variables = Variable.reduceVariables(
+			documentDom,
+			this.variables,
+			namespaceResolver,
+			{}
+		);
 
 		if (phaseId === '#ALL') {
 			return this.patterns.reduce(
 				(results, pattern) =>
-					results.concat(pattern.validateDocument(documentDom, variables)),
+					results.concat(
+						pattern.validateDocument(documentDom, variables, namespaceResolver)
+					),
 				[]
 			);
 		}
 
 		const phase = this.phases.find(phase => phase.id === phaseId);
-		const phaseVariables = Variable.reduceVariables(documentDom, phase.variables, {
-			...variables
-		});
+		const phaseVariables = Variable.reduceVariables(
+			documentDom,
+			phase.variables,
+			namespaceResolver,
+			{
+				...variables
+			}
+		);
 
 		return phase.active
 			.map(patternId => this.patterns.find(pattern => pattern.id === patternId))
 			.reduce(
 				(results, pattern) =>
-					results.concat(pattern.validateDocument(documentDom, phaseVariables)),
+					results.concat(
+						pattern.validateDocument(documentDom, phaseVariables, namespaceResolver)
+					),
 				[]
 			);
+	}
+
+	// TODO more optimally store the namespace prefix/uri mapping. Right now its modeled as an array because there
+	// is a list of <ns> elements that are not really guaranteed to use unique prefixes.
+	getNamespaceUriForPrefix(prefix = null) {
+		if (!prefix) {
+			return null;
+		}
+		const ns = this.nss.find(ns => ns.prefix === prefix);
+		if (!ns) {
+			throw new Error(
+				`Namespace prefix "${prefix}" could not be resolved to an URI using <sch:ns>`
+			);
+		}
+
+		return ns.uri;
 	}
 
 	static fromJson(json): Schema {

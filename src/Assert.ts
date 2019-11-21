@@ -1,11 +1,6 @@
 import { evaluateXPathToString, evaluateXPathToBoolean, Node } from 'fontoxpath';
 import Result from './Result';
 
-function namespaceResolver(input) {
-	console.log('Assert namespaceResolver', input);
-	return input;
-}
-
 export default class Assert {
 	test: string;
 	message: Array<string | Object>;
@@ -17,7 +12,12 @@ export default class Assert {
 		this.isReport = isReport;
 	}
 
-	createMessageString(contextNode: Node, variables: Object, chunks: Array<string | any>): string {
+	createMessageString(
+		contextNode: Node,
+		variables: Object,
+		namespaceResolver: (prefix: string) => string,
+		chunks: Array<string | any>
+	): string {
 		return chunks
 			.map((chunk): string => {
 				if (typeof chunk === 'string') {
@@ -50,13 +50,21 @@ export default class Assert {
 			.join('');
 	}
 
-	validateNode(context: Node, variables: Object): Result | null {
+	validateNode(
+		context: Node,
+		variables: Object,
+		namespaceResolver: (prefix: string) => string
+	): Result | null {
 		const outcome = evaluateXPathToBoolean(this.test, context, null, variables, {
 			namespaceResolver
 		});
 		return (!this.isReport && outcome) || (this.isReport && !outcome)
 			? null
-			: new Result(context, this, this.createMessageString(context, variables, this.message));
+			: new Result(
+					context,
+					this,
+					this.createMessageString(context, variables, namespaceResolver, this.message)
+			  );
 	}
 
 	static QUERY = `map {

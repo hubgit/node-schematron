@@ -1,10 +1,5 @@
 import { evaluateXPath } from 'fontoxpath';
 
-function namespaceResolver(input) {
-	console.log('Variable namespaceResolver', input);
-	return input;
-}
-
 export default class Variable {
 	name: string;
 	value: string;
@@ -14,7 +9,12 @@ export default class Variable {
 		this.value = value;
 	}
 
-	static reduceVariables(context: any, variables: Variable[], initial: Object | null): Object {
+	static reduceVariables(
+		context: any,
+		variables: Variable[],
+		namespaceResolver: (prefix: string) => string,
+		initial: Object | null
+	): Object {
 		return variables.reduce(
 			(mapping, variable) =>
 				Object.assign(mapping, {
