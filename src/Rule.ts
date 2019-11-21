@@ -1,5 +1,3 @@
-import { evaluateXPathToNodes, evaluateXPathToBoolean } from 'fontoxpath';
-
 import Variable from './Variable';
 import Assert from './Assert';
 

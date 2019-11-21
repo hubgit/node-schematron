@@ -4,6 +4,14 @@ import { Schema } from '../index';
 // See also section 5.4.7 of ISO/IEC 19757-3
 
 describe('ISO/IEC 19757-3:2016, Section 5.4.7, <ns />', () => {
+	it('(tmp) parse to JS object', () => {
+		const schema = Schema.fromString(`<schema xmlns="http://purl.oclc.org/dsdl/schematron">
+				<ns uri="http://alpha" prefix="foo"/>
+				<ns uri="http://beta" prefix="bar"/>
+			</schema>`);
+		expect(schema.nss).toHaveLength(2);
+	});
+
 	// Not testing because this is an assertion about the schematron XML
 	xit('Specification of a namespace prefix and URI. The required prefix attribute is an XML name with no colon character. The required uri attribute is a namespace URI [IRI].', () => {});
 

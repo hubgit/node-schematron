@@ -1,6 +1,11 @@
 import { evaluateXPathToString, evaluateXPathToBoolean, Node } from 'fontoxpath';
 import Result from './Result';
 
+function namespaceResolver(input) {
+	console.log('Assert namespaceResolver', input);
+	return input;
+}
+
 export default class Assert {
 	test: string;
 	message: Array<string | Object>;
@@ -21,12 +26,22 @@ export default class Assert {
 
 				// <sch:name />
 				if (chunk.$type === 'name') {
-					return evaluateXPathToString('name(' + (chunk.path || '') + ')', contextNode, null, variables);
+					return evaluateXPathToString(
+						'name(' + (chunk.path || '') + ')',
+						contextNode,
+						null,
+						variables,
+						{
+							namespaceResolver
+						}
+					);
 				}
 
 				// <sch:value-of />
 				if (chunk.$type === 'value-of') {
-					return evaluateXPathToString(chunk.select, contextNode, null, variables);
+					return evaluateXPathToString(chunk.select, contextNode, null, variables, {
+						namespaceResolver
+					});
 				}
 
 				console.log(chunk);
@@ -36,7 +51,9 @@ export default class Assert {
 	}
 
 	validateNode(context: Node, variables: Object): Result | null {
-		const outcome = evaluateXPathToBoolean(this.test, context, null, variables);
+		const outcome = evaluateXPathToBoolean(this.test, context, null, variables, {
+			namespaceResolver
+		});
 		return (!this.isReport && outcome) || (this.isReport && !outcome)
 			? null
 			: new Result(context, this, this.createMessageString(context, variables, this.message));

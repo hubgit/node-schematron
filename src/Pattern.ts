@@ -3,6 +3,11 @@ import { evaluateXPathToNodes } from 'fontoxpath';
 import Variable from './Variable';
 import Rule from './Rule';
 
+function namespaceResolver(input, ...rest) {
+	console.log('Pattern namespaceResolver', input, ...rest);
+	return input;
+}
+
 export default class Pattern {
 	id?: string;
 	rules: Rule[];
@@ -19,7 +24,9 @@ export default class Pattern {
 			...parentVariables
 		});
 		const ruleContexts = this.rules.map(rule =>
-			evaluateXPathToNodes('//(' + rule.context + ')', documentDom)
+			evaluateXPathToNodes('//(' + rule.context + ')', documentDom, null, variables, {
+				namespaceResolver
+			})
 		);
 		const flattenValidationResults = (results, node) => {
 			const ruleIndex = ruleContexts.findIndex(context => context.includes(node));

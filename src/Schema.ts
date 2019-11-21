@@ -4,6 +4,7 @@ import { sync } from 'slimdom-sax-parser';
 import Variable from './Variable';
 import Phase from './Phase';
 import Pattern from './Pattern';
+import Ns from './Ns';
 import Result from './Result';
 
 export default class Schema {
@@ -12,19 +13,22 @@ export default class Schema {
 	public variables: Variable[];
 	public phases: Phase[];
 	public patterns: Pattern[];
+	public nss: Ns[];
 
 	constructor(
 		title: string,
 		defaultPhase: string | null,
 		variables: Variable[],
 		phases: Phase[],
-		patterns: Pattern[]
+		patterns: Pattern[],
+		nss: Ns[]
 	) {
 		this.title = title;
 		this.defaultPhase = defaultPhase;
 		this.variables = variables;
 		this.phases = phases;
 		this.patterns = patterns;
+		this.nss = nss;
 	}
 
 	validateString(documentXmlString: string, phaseId?: string): Result[] {
@@ -42,25 +46,35 @@ export default class Schema {
 		const variables = Variable.reduceVariables(documentDom, this.variables, {});
 
 		if (phaseId === '#ALL') {
-			return this.patterns
-				.reduce((results, pattern) => results.concat(pattern.validateDocument(documentDom, variables)), []);
+			return this.patterns.reduce(
+				(results, pattern) =>
+					results.concat(pattern.validateDocument(documentDom, variables)),
+				[]
+			);
 		}
 
-		const phase = this.phases.find((phase) => phase.id === phaseId);
-		const phaseVariables = Variable.reduceVariables(documentDom, phase.variables, { ...variables });
+		const phase = this.phases.find(phase => phase.id === phaseId);
+		const phaseVariables = Variable.reduceVariables(documentDom, phase.variables, {
+			...variables
+		});
 
 		return phase.active
-			.map((patternId) => this.patterns.find((pattern) => pattern.id === patternId))
-			.reduce((results, pattern) => results.concat(pattern.validateDocument(documentDom, phaseVariables)), []);
+			.map(patternId => this.patterns.find(pattern => pattern.id === patternId))
+			.reduce(
+				(results, pattern) =>
+					results.concat(pattern.validateDocument(documentDom, phaseVariables)),
+				[]
+			);
 	}
 
 	static fromJson(json): Schema {
 		return new Schema(
 			json.title,
 			json.defaultPhase,
-			json.variables.map((obj) => Variable.fromJson(obj)),
-			json.phases.map((obj) => Phase.fromJson(obj)),
-			json.patterns.map((obj) => Pattern.fromJson(obj))
+			json.variables.map(obj => Variable.fromJson(obj)),
+			json.phases.map(obj => Phase.fromJson(obj)),
+			json.patterns.map(obj => Pattern.fromJson(obj)),
+			json.nss.map(obj => Ns.fromJson(obj))
 		);
 	}
 
@@ -94,7 +108,8 @@ export default class Schema {
 					'defaultPhase': $context/@defaultPhase/string(),
 					'phases': array { $context/sch:phase/${Phase.QUERY}},
 					'patterns': array { $context/sch:pattern/${Pattern.QUERY}},
-					'variables': array { $context/sch:let/${Variable.QUERY}}
+					'variables': array { $context/sch:let/${Variable.QUERY}},
+					'nss': array { $context/sch:ns/${Ns.QUERY}}
 				}
 			`,
 			schematronDom,
