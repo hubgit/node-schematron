@@ -1,6 +1,9 @@
 const { sync, slimdom } = require('slimdom-sax-parser');
 const { evaluateXPathToFirstNode } = require('fontoxpath');
 
+// JUnit XSD: https://github.com/michaelleeallen/mocha-junit-reporter/blob/master/test/resources/JUnit.xsd
+// See also: https://help.catchsoftware.com/display/ET/JUnit+Format
+
 module.exports = function bindXunitReporterToEvents(req, events, stream) {
 	if (!stream) {
 		// Somebody obviously wants us to shut up
@@ -11,25 +14,53 @@ module.exports = function bindXunitReporterToEvents(req, events, stream) {
 	const testSuitesNode = evaluateXPathToFirstNode('//testsuites', document);
 
 	events.on('file', (file, fileIndex) => {
-		if (file.$error) {
-			return;
-		}
 		const testSuiteElement = document.createElement('testsuite');
 
-		file.$value.forEach((report) => {
-			const testCaseElement = document.createElement('testcase');
-			testCaseElement.setAttribute('classname', 'test');
-			testCaseElement.setAttribute('name', 'test');
-			const errorElement = document.createElement('error');
-			errorElement.setAttribute('message', report.message.replace(/\s\s+/g, '').trim());
-			errorElement.setAttribute('type', '?');
-			testCaseElement.appendChild(errorElement);
-			testSuiteElement.appendChild(testCaseElement);
-		});
+		const totals = {
+			tests: file.$value ? file.$value.length : 0,
+			skipped: 0,
+			failures: 0,
+			errors: 0
+		};
 
-		testSuiteElement.setAttribute('errors', file.$value.length);
+		if (file.$error) {
+			++totals.errors;
+			return;
+		} else {
+			file.$value.forEach((report) => {
+				const safeMessage = report.message.replace(/\s\s+/g, '').trim();
+
+				const testCaseElement = document.createElement('testcase');
+				testCaseElement.setAttribute('classname', file.$fileNameBase);
+				testCaseElement.setAttribute('name', safeMessage);
+
+				if (report.isReport) {
+					// JUnit does not seem to provide for reports, so not writing anything
+					++totals.skipped;
+					testCaseElement.appendChild(document.createElement('skipped'));
+				} else {
+					++totals.failures;
+					const errorElement = document.createElement('failure');
+
+					// A schematron assert/report may not have a unique identifier, or something else to put here
+					errorElement.setAttribute('type', 'assert');
+
+					// Attribute is not required per XSD, and we have nothing useful to add
+					// errorElement.setAttribute('message', 'Assertion failed');
+
+					testCaseElement.appendChild(errorElement);
+				}
+
+				testSuiteElement.appendChild(testCaseElement);
+			});
+		}
+
+		testSuiteElement.setAttribute('errors', totals.errors);
+		testSuiteElement.setAttribute('failures', totals.failures);
 		testSuiteElement.setAttribute('id', fileIndex);
 		testSuiteElement.setAttribute('name', file.$fileNameBase);
+		testSuiteElement.setAttribute('skipped', totals.skipped);
+		testSuiteElement.setAttribute('tests', totals.tests);
 		testSuiteElement.setAttribute('timestamp', new Date().toISOString());
 
 		testSuitesNode.appendChild(testSuiteElement);
