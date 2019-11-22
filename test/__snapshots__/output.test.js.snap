@@ -3,7 +3,12 @@
 exports[`Output Schema.fromString(SCHEMATRON_EXAMPLE) 1`] = `
 Schema {
   "defaultPhase": null,
-  "nss": Array [],
+  "namespaces": Array [
+    Namespace {
+      "prefix": "drp",
+      "uri": "http://derp",
+    },
+  ],
   "patterns": Array [
     Pattern {
       "id": null,
@@ -43,7 +48,7 @@ Schema {
               "test": "not(@foo = 'bar' and not(preceding-sibling::*))",
             },
           ],
-          "context": "thunder[@foo]",
+          "context": "drp:thunder[@foo]",
           "variables": Array [],
         },
         Rule {
@@ -57,7 +62,7 @@ Schema {
               "test": "@foo = 'bar'",
             },
           ],
-          "context": "thunder",
+          "context": "drp:thunder",
           "variables": Array [],
         },
       ],
