@@ -1,3 +1,4 @@
+import Result from './Result'
 import Variable from './Variable';
 import Assert from './Assert';
 
@@ -18,7 +19,13 @@ export default class Rule {
 		});
 
 		return this.asserts
-			.map(assert => assert.validateNode(context, variables, namespaceResolver))
+			.map(assert => {
+				try {
+					return assert.validateNode(context, variables, namespaceResolver)
+				} catch (error) {
+					return new Result(context, assert, error.message)
+				}
+			})
 			.filter(result => !!result);
 	}
 
